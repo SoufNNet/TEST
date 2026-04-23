@@ -334,57 +334,39 @@ if not RDKIT_OK:
 #  Sidebar — chemins des fichiers
 # ════════════════════════════════════════════════════════════════════════════
 
-with st.sidebar:
-    st.header("🗂️  Chemins des modèles")
-    st.markdown("Renseignez les chemins vers vos fichiers sauvegardés.")
-
-    st.subheader("Pipeline Enthalpie")
-    h_sklearn = st.text_input("pipeline_enthalpy_sklearn.pkl",
-                               value="pipeline_enthalpy_saved/pipeline_enthalpy_sklearn.pkl")
-    h_ann     = st.text_input("pipeline_enthalpy_ann.pt",
-                               value="pipeline_enthalpy_saved/pipeline_enthalpy_ann.pt")
-    h_vae_cfg = st.text_input("pipeline_enthalpy_vae_config.pkl",
-                               value="pipeline_enthalpy_saved/pipeline_enthalpy_vae_config.pkl")
-
-    st.subheader("Pipeline Entropie")
-    s_sklearn = st.text_input("pipeline_entropy_sklearn.pkl",
-                               value="pipeline_entropy_saved/pipeline_entropy_sklearn.pkl")
-    s_ann     = st.text_input("pipeline_entropy_ann.pt",
-                               value="pipeline_entropy_saved/pipeline_entropy_ann.pt")
-    s_vae_cfg = st.text_input("pipeline_entropy_vae_config.pkl",
-                               value="pipeline_entropy_saved/pipeline_entropy_vae_config.pkl")
-
-    st.subheader("Poids VAE (communs)")
-    vae_w = st.text_input("Fichier .pt du VAE",
-                           value="vae_molecule_best_van_rachid_poison_VAE_new_128.pt")
-
-    load_btn = st.button("🔄  Recharger", use_container_width=True,
-                          help="Si vous modifiez les chemins, cliquez pour recharger.")
+# ── Chemins des modèles (hardcodés — fichiers dans le repo GitHub) ────────────
+H_SKLEARN = "pipeline_enthalpy_saved/pipeline_enthalpy_sklearn.pkl"
+H_ANN     = "pipeline_enthalpy_saved/pipeline_enthalpy_ann.pt"
+H_CFG     = "pipeline_enthalpy_saved/pipeline_enthalpy_vae_config.pkl"
+S_SKLEARN = "pipeline_entropy_saved/pipeline_entropy_sklearn.pkl"
+S_ANN     = "pipeline_entropy_saved/pipeline_entropy_ann.pt"
+S_CFG     = "pipeline_entropy_saved/pipeline_entropy_vae_config.pkl"
+VAE_W     = "vae_molecule_best_van_rachid_poison_VAE_new_128.pt"
 
 # ── Chargement automatique au démarrage ──────────────────────────────────────
 models_loaded = False
 
-if load_btn or "pipelines" not in st.session_state:
-    with st.spinner("⏳ Chargement des modèles…"):
+if "pipelines" not in st.session_state:
+    with st.spinner("⏳ Chargement des modèles en cours…"):
         try:
             ann_H, sc_H, dp_H, vae_H, vocab_H, dn_H, dev = load_pipeline(
-                h_sklearn, h_ann, h_vae_cfg, vae_w)
+                H_SKLEARN, H_ANN, H_CFG, VAE_W)
             ann_S, sc_S, dp_S, vae_S, vocab_S, dn_S, _   = load_pipeline(
-                s_sklearn, s_ann, s_vae_cfg, vae_w)
+                S_SKLEARN, S_ANN, S_CFG, VAE_W)
             st.session_state["pipelines"] = {
                 "H": (ann_H, sc_H, dp_H, vae_H, vocab_H, dn_H, dev),
                 "S": (ann_S, sc_S, dp_S, vae_S, vocab_S, dn_S, dev),
             }
         except Exception as e:
-            st.session_state.pop("pipelines", None)
-            st.sidebar.error(f"❌  Fichier introuvable :\n{e}")
+            st.error(f"❌ Erreur lors du chargement des modèles : {e}")
 
 models_loaded = "pipelines" in st.session_state
 
-if models_loaded:
-    st.sidebar.success("✅  Modèles chargés — prêt à prédire !")
-else:
-    st.sidebar.warning("⚠️  Vérifiez les chemins ci-dessus.")
+with st.sidebar:
+    if models_loaded:
+        st.success("✅  Modèles chargés")
+    else:
+        st.error("❌  Modèles non chargés")
 
 st.markdown("---")
 
