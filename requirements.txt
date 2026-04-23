@@ -7,3 +7,5 @@ rdkit
 openpyxl==3.1.5
 matplotlib==3.10.0
 Pillow==11.3.0
+streamlit-ketcher
+ 
