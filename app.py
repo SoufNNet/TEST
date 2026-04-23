@@ -358,33 +358,33 @@ with st.sidebar:
     vae_w = st.text_input("Fichier .pt du VAE",
                            value="vae_molecule_best_van_rachid_poison_VAE_new_128.pt")
 
-    load_btn = st.button("🔄  Charger les modèles", use_container_width=True)
+    load_btn = st.button("🔄  Recharger", use_container_width=True,
+                          help="Si vous modifiez les chemins, cliquez pour recharger.")
 
-# ── Chargement ───────────────────────────────────────────────────────────────
+# ── Chargement automatique au démarrage ──────────────────────────────────────
 models_loaded = False
-if load_btn or st.session_state.get("models_ready"):
-    with st.spinner("Chargement des pipelines…"):
+
+if load_btn or "pipelines" not in st.session_state:
+    with st.spinner("⏳ Chargement des modèles…"):
         try:
             ann_H, sc_H, dp_H, vae_H, vocab_H, dn_H, dev = load_pipeline(
                 h_sklearn, h_ann, h_vae_cfg, vae_w)
             ann_S, sc_S, dp_S, vae_S, vocab_S, dn_S, _   = load_pipeline(
                 s_sklearn, s_ann, s_vae_cfg, vae_w)
-            st.session_state["models_ready"] = True
-            st.session_state["pipelines"]    = {
+            st.session_state["pipelines"] = {
                 "H": (ann_H, sc_H, dp_H, vae_H, vocab_H, dn_H, dev),
                 "S": (ann_S, sc_S, dp_S, vae_S, vocab_S, dn_S, dev),
             }
-            models_loaded = True
         except Exception as e:
-            st.sidebar.error(f"Erreur lors du chargement : {e}")
-elif "models_ready" in st.session_state:
-    models_loaded = True
+            st.session_state.pop("pipelines", None)
+            st.sidebar.error(f"❌  Fichier introuvable :\n{e}")
 
-# ── Bandeau d'état ──────────────────────────────────────────────────────────
+models_loaded = "pipelines" in st.session_state
+
 if models_loaded:
-    st.sidebar.success("✅  Modèles chargés")
+    st.sidebar.success("✅  Modèles chargés — prêt à prédire !")
 else:
-    st.sidebar.info("ℹ️  Cliquez sur **Charger les modèles** pour commencer.")
+    st.sidebar.warning("⚠️  Vérifiez les chemins ci-dessus.")
 
 st.markdown("---")
 
@@ -430,8 +430,7 @@ with col_input:
 
 raw_input = st.session_state["smiles_input"]
 
-predict_btn = st.button("▶  Prédire", type="primary", use_container_width=False,
-                         disabled=not models_loaded)
+predict_btn = st.button("▶  Prédire", type="primary", use_container_width=False)
 
 # ════════════════════════════════════════════════════════════════════════════
 #  Prédiction
