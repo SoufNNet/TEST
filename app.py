@@ -76,21 +76,21 @@ class Decoder(nn.Module):
         super().__init__()
         self.hidden_size   = hidden_size
         self.hidden_factor = n_layers
-        self.emb_drop      = nn.Dropout(dropout)
-        self.rnn           = nn.GRU(input_size, hidden_size, n_layers, batch_first=True)
-        self.lat2hid       = nn.Linear(latent_size, hidden_size * n_layers)
-        self.out2vocab     = nn.Linear(hidden_size, vocab_size)
-        self.out_drop      = nn.Dropout(dropout)
+        self.embedding_dropout = nn.Dropout(dropout)
+        self.rnn               = nn.GRU(input_size, hidden_size, n_layers, batch_first=True)
+        self.latent2hidden     = nn.Linear(latent_size, hidden_size * n_layers)
+        self.outputs2vocab     = nn.Linear(hidden_size, vocab_size)
+        self.outputs_dropout   = nn.Dropout(dropout)
         init_params(self)
 
     def forward(self, emb, z):
-        h = self.lat2hid(z)
+        h = self.latent2hidden(z)
         h = torch.tanh(h.view(-1, self.hidden_factor,
                                self.hidden_size).permute(1, 0, 2).contiguous())
-        emb = self.emb_drop(emb)
+        emb = self.embedding_dropout(emb)
         out, _ = self.rnn(emb, h)
         b, s, hs = out.size()
-        return self.out2vocab(self.out_drop(out.view(-1, hs))).view(b, s, -1)
+        return self.outputs2vocab(self.outputs_dropout(out.view(-1, hs))).view(b, s, -1)
 
 
 class Vae(nn.Module):
