@@ -14,7 +14,6 @@ import io
 from sklearn.preprocessing import StandardScaler
 from sklearn.feature_selection import VarianceThreshold
 
-# ── Tentative d'import RDKit ────────────────────────────────────────────────
 try:
  from rdkit import Chem
  from rdkit.Chem import Descriptors, Draw
@@ -23,14 +22,9 @@ try:
 except ImportError:
  RDKIT_OK = False
 
-# ── Constantes ───────────────────────────────────────────────────────────────
 R_GAS_CONSTANT = 8.314
 TEMPERATURE = 298.15
 ADIM_TO_KJMOL = R_GAS_CONSTANT * TEMPERATURE / 1000.0
-
-# ════════════════════════════════════════════════════════════════════════════
-# Modèles PyTorch (copie exacte de votre code)
-# ════════════════════════════════════════════════════════════════════════════
 
 def init_params(m):
  for _, module in m.named_modules():
@@ -43,14 +37,12 @@ def init_params(m):
    elif param_name == 'bias':
     nn.init.constant_(param, 0.0)
 
-
 class Vocab:
  def __init__(self, tokens):
   self.itos = tokens
   self.stoi = {t: i for i, t in enumerate(tokens)}
  def __len__(self):
   return len(self.itos)
-
 
 class Encoder(nn.Module):
  def __init__(self, input_size=48, hidden_size=512, n_layers=2,
@@ -67,7 +59,6 @@ class Encoder(nn.Module):
   _, h = self.rnn(x)
   h = h.permute(1, 0, 2).contiguous().view(h.size(1), -1)
   return self.mean_lin(h), -torch.abs(self.logvar_lin(h))
-
 
 class Decoder(nn.Module):
  def __init__(self, input_size=48, hidden_size=512, n_layers=4,
@@ -92,7 +83,6 @@ class Decoder(nn.Module):
   b, s, hs = out.size()
   return self.outputs2vocab(self.outputs_dropout(out.view(-1, hs))).view(b, s, -1)
 
-
 class Vae(nn.Module):
  def __init__(self, vocab, vocab_size, embedding_size, dropout, padding_idx,
      sos_idx, unk_idx, max_len, n_layers, hidden_size,
@@ -113,7 +103,6 @@ class Vae(nn.Module):
   mean, _ = self.encoder(emb)
   return mean
 
-
 class ANNRegressor(nn.Module):
  def __init__(self, input_size, hidden_layers, dropout_rate=0.3):
   super().__init__()
@@ -127,7 +116,6 @@ class ANNRegressor(nn.Module):
 
  def forward(self, x):
   return self.network(x).squeeze()
-
 
 class DescriptorProcessor:
  def __init__(self):
@@ -144,15 +132,9 @@ class DescriptorProcessor:
    columns=df.columns[self.variance_selector.get_support()])
   return self.scaler_desc.transform(df_var[self.final_descriptor_names])
 
-
-# ════════════════════════════════════════════════════════════════════════════
-# Fonctions utilitaires
-# ════════════════════════════════════════════════════════════════════════════
-
 def tokenize_smiles(smiles):
  pattern = r'\[[^\]]+\]|%\d{2}|Br|Cl|se|as|@@|[BCNOPSFIbcnops]|[=#\-+:\/\\().\[\]@]|\d'
  return re.findall(pattern, str(smiles))
-
 
 def smiles_to_tensor(smiles_list, vocab, max_len=75):
  data = []
@@ -164,7 +146,6 @@ def smiles_to_tensor(smiles_list, vocab, max_len=75):
   data.append(torch.LongTensor(idx))
  return torch.stack(data)
 
-
 def extract_latent(vae, smiles_list, vocab, device, batch=128):
  vae.eval()
  vecs = []
@@ -174,13 +155,11 @@ def extract_latent(vae, smiles_list, vocab, device, batch=128):
    vecs.append(vae.encode_to_mean(x).cpu().numpy())
  return np.vstack(vecs)
 
-
 def canonicalize(smi):
  if not RDKIT_OK:
   return smi
  mol = Chem.MolFromSmiles(str(smi))
  return Chem.MolToSmiles(mol, canonical=True) if mol else None
-
 
 def calc_descriptors(smiles_list, desc_names):
  if not RDKIT_OK:
@@ -202,7 +181,6 @@ def calc_descriptors(smiles_list, desc_names):
    errs.append(smi)
  return rows, vi, errs
 
-
 def mol_to_image(smi):
  """Renvoie une image PIL de la molécule."""
  if not RDKIT_OK:
@@ -214,11 +192,6 @@ def mol_to_image(smi):
  except Exception:
   pass
  return None
-
-
-# ════════════════════════════════════════════════════════════════════════════
-# Chargement des pipelines (mis en cache)
-# ════════════════════════════════════════════════════════════════════════════
 
 @st.cache_resource
 def load_pipeline(sklearn_path, ann_path, vae_cfg_path, vae_weights_path):
@@ -258,7 +231,6 @@ def load_pipeline(sklearn_path, ann_path, vae_cfg_path, vae_weights_path):
 
  return ann, scaler, dp, vae, vocab, desc_names, device
 
-
 def predict_smiles(smiles_list, ann, scaler, dp, vae, vocab, desc_names, device, conv):
  canonical = []
  for smi in smiles_list:
@@ -289,11 +261,6 @@ def predict_smiles(smiles_list, ann, scaler, dp, vae, vocab, desc_names, device,
  })
  return df, errs
 
-
-# ════════════════════════════════════════════════════════════════════════════
-# Streamlit UI
-# ════════════════════════════════════════════════════════════════════════════
-
 try:
  from streamlit_ketcher import st_ketcher
  KETCHER_OK = True
@@ -311,27 +278,35 @@ st.markdown("""
 [data-testid="stSidebar"] { display: none; }
 [data-testid="collapsedControl"] { display: none; }
 .page-title {
- font-size: 22px;
- font-weight: 700;
- line-height: 1.35;
- margin-bottom: 4px;
+ font-size: 42px;
+ font-weight: 800;
+ line-height: 1.2;
+ margin-bottom: 8px;
  color: var(--text-color);
 }
 .page-sub {
  font-size: 13px;
- color: #888;
+ color:
  margin-bottom: 0;
 }
-.result-card {
- background: #f4f6fb;
+.result-card-h {
+ background: #fde8e8;
  border-radius: 12px;
  padding: 22px 28px;
- border-left: 5px solid #4a90d9;
  margin: 8px 0;
 }
-.result-card .label { font-size: 13px; color: #666; margin: 0 0 4px 0; }
-.result-card .value { font-size: 28px; font-weight: 700; color: #1a1a2e; margin: 0; }
-.result-card .unit { font-size: 13px; color: #888; }
+.result-card-s {
+ background: #e6f4ea;
+ border-radius: 12px;
+ padding: 22px 28px;
+ margin: 8px 0;
+}
+.result-card-h .label { font-size: 13px; color: #a33; margin: 0 0 4px 0; }
+.result-card-h .value { font-size: 28px; font-weight: 700; color: #7a0000; margin: 0; }
+.result-card-h .unit  { font-size: 13px; color: #c44; }
+.result-card-s .label { font-size: 13px; color: #2a6e3f; margin: 0 0 4px 0; }
+.result-card-s .value { font-size: 28px; font-weight: 700; color: #1a4d2e; margin: 0; }
+.result-card-s .unit  { font-size: 13px; color: #3a8a55; }
 .warn-box {
  background: #fff3cd;
  border-left: 4px solid #ffc107;
@@ -342,7 +317,6 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-# ── Title ─────────────────────────────────────────────────────────────────────
 st.markdown(
  '<p class="page-title">Hybrid Molecular Representation Combining Variational '
  'Autoencoder Latent Space and Physicochemical Descriptors for the Prediction '
@@ -356,7 +330,6 @@ st.markdown(
 )
 st.markdown("---")
 
-# ── Model paths (hardcoded — files committed to GitHub repo) ──────────────────
 H_SKLEARN = "pipeline_enthalpy_saved/pipeline_enthalpy_sklearn.pkl"
 H_ANN  = "pipeline_enthalpy_saved/pipeline_enthalpy_ann.pt"
 H_CFG  = "pipeline_enthalpy_saved/pipeline_enthalpy_vae_config.pkl"
@@ -365,7 +338,6 @@ S_ANN  = "pipeline_entropy_saved/pipeline_entropy_ann.pt"
 S_CFG  = "pipeline_entropy_saved/pipeline_entropy_vae_config.pkl"
 VAE_W  = "vae_molecule_best_van_rachid_poison_VAE_new_128.pt"
 
-# ── Auto-load models at startup ───────────────────────────────────────────────
 if "pipelines" not in st.session_state:
  with st.spinner("Loading models, please wait..."):
   try:
@@ -382,7 +354,6 @@ if "pipelines" not in st.session_state:
 
 models_loaded = "pipelines" in st.session_state
 
-# ── SMILES input — two modes ──────────────────────────────────────────────────
 st.subheader("Molecule Input")
 
 if "smiles_input" not in st.session_state:
@@ -390,14 +361,14 @@ if "smiles_input" not in st.session_state:
 
 mode = st.radio(
  "Input method",
- ["Type SMILES", "Draw molecule"],
+ ["SMILES", "Draw molecule"],
  horizontal=True,
  label_visibility="collapsed",
 )
 
 smiles_to_predict = ""
 
-if mode == "Type SMILES":
+if mode == "SMILES":
  smiles_to_predict = st.text_input(
   "Enter a SMILES string",
   placeholder="e.g. CCO or c1ccccc1 or CC(=O)O",
@@ -428,10 +399,6 @@ if smiles_to_predict:
 
 st.markdown("")
 predict_btn = st.button("Predict", type="primary")
-
-# ════════════════════════════════════════════════════════════════════════════
-# Prediction
-# ════════════════════════════════════════════════════════════════════════════
 
 if predict_btn:
  if not smiles_to_predict:
@@ -466,7 +433,7 @@ if predict_btn:
     if not df_H.empty:
      val_H = df_H["Valeur prédite"].iloc[0]
      st.markdown(
-      f'<div class="result-card">'
+      f'<div class="result-card-h">'
       f'<p class="label">Standard Enthalpy of Formation</p>'
       f'<p class="value">{val_H:.2f}</p>'
       f'<p class="unit">kJ/mol &nbsp;·&nbsp; ΔH°f</p>'
@@ -476,13 +443,12 @@ if predict_btn:
     if not df_S.empty:
      val_S = df_S["Valeur prédite"].iloc[0]
      st.markdown(
-      f'<div class="result-card">'
+      f'<div class="result-card-s">'
       f'<p class="label">Standard Entropy</p>'
       f'<p class="value">{val_S:.2f}</p>'
       f'<p class="unit">J/mol·K &nbsp;·&nbsp; S°</p>'
       f'</div>', unsafe_allow_html=True)
 
-   # Download
    result_df = pd.DataFrame({
     "SMILES (input)" : [smiles_to_predict],
     "Canonical SMILES" : [smi_can],
@@ -498,7 +464,6 @@ if predict_btn:
     mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
    )
 
-# ── Footer ────────────────────────────────────────────────────────────────────
 st.markdown("---")
 st.caption(
  "Model: VAE latent space + RDKit physicochemical descriptors + ANN regression • "
