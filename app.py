@@ -392,33 +392,43 @@ st.markdown("---")
 #  Zone de saisie SMILES
 # ════════════════════════════════════════════════════════════════════════════
 
+# Initialisation session_state AVANT les widgets
+if "smiles_input" not in st.session_state:
+    st.session_state["smiles_input"] = ""
+
+examples = {
+    "Éthanol"        : "CCO",
+    "Benzène"        : "c1ccccc1",
+    "Acide acétique" : "CC(=O)O",
+    "Octane"         : "CCCCCCCC",
+    "Acétone"        : "CC(C)=O",
+    "Toluène"        : "Cc1ccccc1",
+    "Naphthalène"    : "c1ccc2ccccc2c1",
+}
+
+# Boutons traités AVANT le text_area pour que session_state soit à jour au rendu
 col_input, col_examples = st.columns([3, 1])
+
+with col_examples:
+    st.subheader("Exemples")
+    for name, smi in examples.items():
+        if st.button(f"➕ {name}", use_container_width=True, key=f"btn_{name}"):
+            current = st.session_state["smiles_input"]
+            st.session_state["smiles_input"] = (current + "\n" + smi).strip()
+            st.rerun()
 
 with col_input:
     st.subheader("🔬  Entrée SMILES")
-    raw_input = st.text_area(
+    # key= synchronise automatiquement le widget avec session_state
+    st.text_area(
         "Entrez un ou plusieurs SMILES (un par ligne)",
         height=160,
         placeholder="CCO\nc1ccccc1\nCC(=O)O\nCCCCCCCC",
         help="Notation SMILES standard. Chaque ligne = une molécule.",
+        key="smiles_input",
     )
 
-with col_examples:
-    st.subheader("Exemples")
-    examples = {
-        "Éthanol"     : "CCO",
-        "Benzène"     : "c1ccccc1",
-        "Acide acétique": "CC(=O)O",
-        "Octane"      : "CCCCCCCC",
-        "Acétone"     : "CC(C)=O",
-        "Toluène"     : "Cc1ccccc1",
-        "Naphthalène" : "c1ccc2ccccc2c1",
-    }
-    for name, smi in examples.items():
-        if st.button(f"➕ {name}", use_container_width=True):
-            # Ajoute l'exemple dans la zone de texte via session_state
-            current = st.session_state.get("smiles_input", "")
-            st.session_state["smiles_input"] = (current + "\n" + smi).strip()
+raw_input = st.session_state["smiles_input"]
 
 predict_btn = st.button("▶  Prédire", type="primary", use_container_width=False,
                          disabled=not models_loaded)
