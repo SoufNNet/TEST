@@ -308,6 +308,8 @@ st.set_page_config(
 
 st.markdown("""
 <style>
+[data-testid="stSidebar"] { display: none; }
+[data-testid="collapsedControl"] { display: none; }
 .page-title {
  font-size: 22px;
  font-weight: 700;
@@ -379,15 +381,6 @@ if "pipelines" not in st.session_state:
    st.error(f"Model loading error: {e}")
 
 models_loaded = "pipelines" in st.session_state
-
-with st.sidebar:
- st.markdown("### Model status")
- if models_loaded:
-  st.success("Models loaded")
- else:
-  st.error("Models not loaded")
- st.markdown("---")
- st.caption("VAE latent space + RDKit descriptors + ANN regression")
 
 # ── SMILES input — two modes ──────────────────────────────────────────────────
 st.subheader("Molecule Input")
